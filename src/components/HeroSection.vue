@@ -1,165 +1,232 @@
 <template>
-  <div class="page">
-    <section class="hero">
+  <section class="hero">
+    <div class="copy">
+      <p class="kicker">Portfólio · Front-end</p>
+      <h1>
+        <span>{{ displayedText }}</span>
+        <span class="caret" aria-hidden="true">|</span>
+      </h1>
+      <p class="bio">
+        Desenvolvedora Front-end com experiência em Vue.js, JavaScript, TypeScript, HTML, CSS
+        e integração com APIs REST. Resolvo problemas de usabilidade, performance e manutenção
+        aplicando Clean Code, arquitetura modular e CI/CD. O que me diferencia é a combinação
+        de visão técnica e foco no usuário.
+      </p>
 
-      <!-- MENU -->
-      <div class="menu">
-        <button class="menu-btn" @click="menuOpen = !menuOpen">☰</button>
-        <div v-if="menuOpen" class="dropdown">
-<router-link to="/projects">Meus Projetos</router-link>
-        </div>
+      <div class="skills">
+        <span v-for="skill in skills" :key="skill">{{ skill }}</span>
       </div>
 
-      <!-- TEXTO -->
-      <div class="text">
-        <h1>{{ displayedText }}</h1>
-
-        <!-- ME CONHEÇA MELHOR -->
-        <div class="about">
-          <h2>Me conheça melhor</h2>
-   <h2>Desenvolvedora Front-end com experiência sólida em Vue.js, JavaScript, TypeScript, HTML, CSS e integração com APIs REST. Resolvo problemas de usabilidade, performance e manutenção de código aplicando Clean Code, arquitetura modular e CI/CD. O que me diferencia é a combinação de visão técnica e foco no usuário, garantindo interfaces eficientes e escaláveis que entregam valor real para o negócio.</h2>
-          <SocialCarousel />
-        </div>
+      <div class="actions">
+        <DsButton size="lg" @click="go('/projects')">Ver design system</DsButton>
+        <DsButton size="lg" variant="ghost" @click="go('/dashboard')">Abrir dashboard</DsButton>
+        <DsButton size="lg" variant="ghost" @click="go('/mapa')">Mapa de polígonos</DsButton>
+        <DsButton size="lg" variant="ghost" @click="go('/chuva')">Chuva interpolada</DsButton>
       </div>
 
-      <!-- FOTO -->
+      <SocialCarousel />
+    </div>
+
+    <aside class="portrait">
       <div class="photo">
-        <img src="/src/assets/profile.jpeg" alt="Dieni" />
+        <img v-if="photoOk" :src="photoSrc" alt="Dieni Kielermann" @error="photoOk = false" />
+        <span v-else>DK</span>
       </div>
-
-    </section>
-  </div>
+      <ul class="highlights">
+        <li>
+          <strong>Interfaces</strong>
+          <span>Componentes reutilizáveis e acessíveis</span>
+        </li>
+        <li>
+          <strong>Produto</strong>
+          <span>Cadastro, mapas GeoJSON e chuva interpolada</span>
+        </li>
+        <li>
+          <strong>Entrega</strong>
+          <span>Vue, TypeScript e CI/CD</span>
+        </li>
+      </ul>
+    </aside>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import SocialCarousel from './SocialCarousel.vue'
+import DsButton from './ui/DsButton.vue'
 
-const menuOpen = ref(false)
-
-const fullText = "Olá, eu sou a Dieni :)\nDesenvolvedora Front End\nVue | Node.js | Angular"
-const displayedText = ref("")
+const router = useRouter()
+const fullText = 'Olá, eu sou a Dieni :)\nDesenvolvedora Front End\nVue | Node.js | Angular'
+const displayedText = ref('')
+const photoOk = ref(false)
+const photoSrc = `${import.meta.env.BASE_URL}profile.jpeg`
+const skills = ['Vue.js', 'TypeScript', 'Node.js', 'Angular', 'HTML/CSS', 'REST APIs', 'CI/CD']
 let index = 0
+let timer: number | undefined
 
 onMounted(() => {
-  const interval = setInterval(() => {
+  const img = new Image()
+  img.onload = () => {
+    photoOk.value = true
+  }
+  img.src = photoSrc
+
+  timer = window.setInterval(() => {
     if (index < fullText.length) {
       displayedText.value += fullText[index]
-      index++
-    } else {
-      clearInterval(interval)
+      index += 1
+    } else if (timer) {
+      window.clearInterval(timer)
     }
-  }, 60)
+  }, 42)
 })
+
+onUnmounted(() => {
+  if (timer) window.clearInterval(timer)
+})
+
+function go(path: string) {
+  void router.push(path)
+}
 </script>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #675da3, #010d24);
-}
-
-/* HERO */
 .hero {
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4rem;
-  box-sizing: border-box;
-  position: relative;
-}
-
-/* MENU */
-.menu {
-  position: absolute;
-  top: 2rem;
-  right: 2rem;
-  z-index: 20;
-}
-.dropdown a, .dropdown router-link {
-  color: #e0f2ff;
-  text-decoration: none;
-}
-
-.menu-btn {
-  background: transparent;
-  border: none;
-  font-size: 2.5rem;
-  cursor: pointer;
-  color: #c7d2fe;
-  text-shadow: 0 0 20px rgba(99,102,241,1);
-}
-
-/* DROPDOWN */
-.dropdown {
-  position: absolute;
-  top: 3.5rem;
-  right: 0;
-  background: rgba(10,10,40,0.9);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 1rem 1.5rem;
-  box-shadow: 0 0 40px rgba(99,102,241,0.6);
-}
-
-.dropdown a {
-  display: block;
-  font-size: 1.4rem;
-  color: #e0f2ff;
-  text-decoration: none;
-  padding: 0.5rem 0;
-  text-shadow: 0 0 12px rgba(96,165,250,0.9);
-}
-
-.dropdown a:hover {
-  transform: translateX(6px);
-}
-
-/* TEXTO */
-.text {
-  max-width: 55%;
-  display: flex;
-  flex-direction: column;
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+  min-height: calc(100vh - var(--ds-nav-h));
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
   gap: 3rem;
+  align-items: center;
+  padding: 2.5rem 0 4rem;
+}
+
+.kicker {
+  margin: 0 0 0.8rem;
+  color: var(--ds-accent);
+  font-size: var(--ds-fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 h1 {
-  font-size: 3.2rem;
-  font-family: 'Poppins', 'Inter', system-ui, sans-serif;
-  color: #e0f2ff;
-  line-height: 1.3;
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.25;
   white-space: pre-wrap;
-  text-shadow:
-    0 0 8px rgba(96, 165, 250, 0.8),
-    0 0 16px rgba(59, 130, 246, 0.9),
-    0 0 32px rgba(37, 99, 235, 0.8);
+  text-shadow: 0 0 24px rgba(96, 165, 250, 0.35);
 }
 
-/* ABOUT */
-.about h2 {
-  font-size: 2rem;
-  color: #c7d2fe;
-  margin-bottom: 1.5rem;
-  text-shadow: 0 0 20px rgba(99,102,241,0.9);
+.caret {
+  color: var(--ds-accent);
+  animation: blink 1s step-end infinite;
 }
 
-/* FOTO */
+.bio {
+  margin: 1.4rem 0 0;
+  max-width: 62ch;
+  color: var(--ds-text-muted);
+  font-size: var(--ds-fs-lg);
+}
+
+.skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.4rem;
+}
+
+.skills span {
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--ds-radius-full);
+  border: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.6rem;
+}
+
+.portrait {
+  display: grid;
+  justify-items: center;
+  gap: 1.4rem;
+}
+
 .photo {
-  width: 260px;
-  height: 260px;
+  width: 240px;
+  height: 240px;
+  display: grid;
+  place-items: center;
   border-radius: 50%;
   overflow: hidden;
-  background: rgba(255,255,255,0.3);
-  padding: 6px;
-  box-shadow: 0 0 40px rgba(99,102,241,0.6);
+  background: linear-gradient(135deg, var(--ds-primary), var(--ds-accent));
+  box-shadow: var(--ds-shadow-glow);
+  font-size: 4rem;
+  font-weight: 800;
+  color: #071018;
 }
 
 .photo img {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
   object-fit: cover;
+}
+
+.highlights {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.highlights li {
+  padding: 0.9rem 1rem;
+  border-radius: var(--ds-radius-md);
+  border: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+}
+
+.highlights strong,
+.highlights span {
+  display: block;
+}
+
+.highlights span {
+  margin-top: 0.2rem;
+  color: var(--ds-text-muted);
+  font-size: var(--ds-fs-sm);
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding-top: 1.5rem;
+  }
+
+  .portrait {
+    order: -1;
+  }
+
+  .photo {
+    width: 180px;
+    height: 180px;
+  }
 }
 </style>

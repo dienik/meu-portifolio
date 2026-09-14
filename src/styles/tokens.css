@@ -1,0 +1,66 @@
+:root {
+  --ds-bg-0: #050816;
+  --ds-bg-1: #0b1024;
+  --ds-bg-2: #151b36;
+  --ds-surface: rgba(255, 255, 255, 0.06);
+  --ds-surface-strong: rgba(255, 255, 255, 0.1);
+  --ds-surface-solid: #12182f;
+  --ds-border: rgba(165, 180, 252, 0.18);
+  --ds-border-strong: rgba(165, 180, 252, 0.38);
+  --ds-text: #eef2ff;
+  --ds-text-muted: #a5b4d4;
+  --ds-text-inverse: #0f172a;
+
+  --ds-primary: #818cf8;
+  --ds-primary-strong: #6366f1;
+  --ds-primary-soft: rgba(99, 102, 241, 0.18);
+  --ds-accent: #22d3ee;
+  --ds-accent-soft: rgba(34, 211, 238, 0.16);
+  --ds-success: #34d399;
+  --ds-success-soft: rgba(52, 211, 153, 0.16);
+  --ds-warning: #fbbf24;
+  --ds-warning-soft: rgba(251, 191, 36, 0.16);
+  --ds-danger: #f87171;
+  --ds-danger-soft: rgba(248, 113, 113, 0.16);
+  --ds-info: #60a5fa;
+  --ds-info-soft: rgba(96, 165, 250, 0.16);
+
+  --ds-space-1: 0.25rem;
+  --ds-space-2: 0.5rem;
+  --ds-space-3: 0.75rem;
+  --ds-space-4: 1rem;
+  --ds-space-5: 1.25rem;
+  --ds-space-6: 1.5rem;
+  --ds-space-8: 2rem;
+  --ds-space-10: 2.5rem;
+  --ds-space-12: 3rem;
+
+  --ds-radius-sm: 8px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 20px;
+  --ds-radius-xl: 28px;
+  --ds-radius-full: 999px;
+
+  --ds-shadow: 0 24px 60px rgba(2, 6, 23, 0.45);
+  --ds-shadow-glow: 0 0 40px rgba(99, 102, 241, 0.35);
+  --ds-ring: 0 0 0 3px rgba(129, 140, 248, 0.35);
+
+  --ds-font: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+  --ds-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --ds-fs-xs: 0.75rem;
+  --ds-fs-sm: 0.875rem;
+  --ds-fs-md: 1rem;
+  --ds-fs-lg: 1.125rem;
+  --ds-fs-xl: 1.5rem;
+  --ds-fs-2xl: 2rem;
+  --ds-fs-3xl: 2.75rem;
+  --ds-lh: 1.55;
+  --ds-nav-h: 76px;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --ds-fs-3xl: 2rem;
+    --ds-nav-h: 68px;
+  }
+}

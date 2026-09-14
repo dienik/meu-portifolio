@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import DsBadge from './DsBadge.vue'
+import DsBadge from '../ui/DsBadge.vue'
 </script>
 
 <style scoped>

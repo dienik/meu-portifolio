@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import DsAccordion from './DsAccordion.vue'
+import DsAccordion from '../ui/DsAccordion.vue'
 </script>
 
 <style scoped>

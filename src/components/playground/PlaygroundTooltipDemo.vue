@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import DsTooltip from './DsTooltip.vue'
+import DsTooltip from '../ui/DsTooltip.vue'
 </script>
 
 <style scoped>

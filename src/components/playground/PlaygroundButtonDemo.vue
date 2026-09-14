@@ -46,7 +46,7 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue'
-import DsButton from './DsButton.vue'
+import DsButton from '../ui/DsButton.vue'
 
 interface CounterMap {
   primary: number

@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import DsToggle from './DsToggle.vue'
+import DsToggle from '../ui/DsToggle.vue'
 
 const toggleState = ref(false)
 </script>

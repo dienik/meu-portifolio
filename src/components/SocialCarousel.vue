@@ -8,15 +8,14 @@ type Social = {
 const socials: Social[] = [
   {
     name: 'LinkedIn',
-    icon: '💼',
-    url: 'https://www.linkedin.com/in/dieni-kielermann-da-silva-abb06120a/'
+    icon: 'in',
+    url: 'https://www.linkedin.com/in/dieni-kielermann-da-silva-abb06120a/',
   },
   {
     name: 'GitHub',
-    icon: '💻',
-    url: 'https://github.com/dienik/dienik'
+    icon: 'gh',
+    url: 'https://github.com/dienik/dienik',
   },
-
 ]
 </script>
 
@@ -27,6 +26,7 @@ const socials: Social[] = [
       :key="item.name"
       :href="item.url"
       target="_blank"
+      rel="noreferrer"
       class="card"
     >
       <span class="icon">{{ item.icon }}</span>
@@ -34,40 +34,44 @@ const socials: Social[] = [
     </a>
   </div>
 </template>
+
 <style scoped>
 .carousel {
   display: flex;
-  justify-content: center;
-  gap: 2rem;
-  overflow-x: auto;
-  padding: 2rem 0;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  padding: 1.6rem 0 0;
 }
 
 .card {
-  min-width: 180px;
-  height: 200px;
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(12px);
-  border-radius: 20px;
-  padding: 2rem 1.5rem;
-  text-align: center;
-  color: #e0e7ff;
-  text-decoration: none;
-  transition: 0.4s;
-  box-shadow: 0 0 20px rgba(59,130,246,0.3);
+  min-width: 150px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--ds-radius-md);
+  border: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
-  transform: translateY(-12px) scale(1.05);
-  box-shadow: 0 0 50px rgba(139,92,246,0.8);
+  transform: translateY(-4px);
+  box-shadow: var(--ds-shadow-glow);
 }
 
 .icon {
-  font-size: 3rem;
-  filter: drop-shadow(0 0 10px rgba(167,139,250,0.9));
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--ds-primary-soft);
+  color: var(--ds-primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 </style>
