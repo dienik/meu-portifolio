@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue'
 import {
-  parseGeoJson,
+  parseImportedGeometries,
   toFeatureCollection,
   type MapFeature,
   type MapGeometry,
@@ -101,7 +101,7 @@ export function removeMapFeature(id: string) {
 }
 
 export function importMapFeatures(text: string) {
-  const parsed = parseGeoJson(text)
+  const parsed = parseImportedGeometries(text)
   const created = parsed.map((item) => addMapFeature({
     name: item.name,
     color: item.color,

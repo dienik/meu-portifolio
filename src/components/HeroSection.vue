@@ -21,6 +21,7 @@
         <DsButton size="lg" @click="go('/projects')">Ver design system</DsButton>
         <DsButton size="lg" variant="ghost" @click="go('/dashboard')">Abrir dashboard</DsButton>
         <DsButton size="lg" variant="ghost" @click="go('/mapa')">Mapa de polígonos</DsButton>
+        <DsButton size="lg" variant="ghost" @click="go('/comparar')">Comparar WKT</DsButton>
         <DsButton size="lg" variant="ghost" @click="go('/chuva')">Chuva interpolada</DsButton>
       </div>
 
@@ -39,7 +40,7 @@
         </li>
         <li>
           <strong>Produto</strong>
-          <span>Cadastro, mapas GeoJSON e chuva interpolada</span>
+          <span>Cadastro, mapas GeoJSON, comparador WKT e chuva interpolada</span>
         </li>
         <li>
           <strong>Entrega</strong>

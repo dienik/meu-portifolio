@@ -8,7 +8,7 @@
     </div>
 
     <p class="help">
-      Digite latitude e longitude, cole uma lista ou clique no mapa para incluir o vértice na parte atual.
+      Digite latitude e longitude, cole uma lista ou um WKT, ou clique no mapa para incluir o vértice na parte atual.
     </p>
 
     <section
@@ -61,12 +61,12 @@
 
       <DsTextarea
         v-model="pastes[partIndex]"
-        :label="order === 'lnglat' ? 'Colar lista lng, lat' : 'Colar lista lat, lng'"
+        :label="order === 'lnglat' ? 'Colar lista lng, lat ou WKT' : 'Colar lista lat, lng ou WKT'"
         :rows="3"
-        placeholder="-30.0362, -51.2178"
+        placeholder="POLYGON((-51.21 -30.03, -51.20 -30.04, -51.21 -30.04, -51.21 -30.03))"
       />
       <DsButton size="sm" variant="ghost" type="button" @click.stop="applyPaste(partIndex)">
-        Aplicar lista nesta parte
+        Aplicar lista ou WKT
       </DsButton>
     </section>
 
@@ -88,9 +88,11 @@ import {
   formatCoord,
   geometryToParts,
   isValidLatLng,
+  looksLikeWkt,
   multiPolygonFromParts,
   parseCoordNumber,
   parseCoordinateList,
+  parseWkt,
   polygonFromLatLngs,
   validateParts,
   type LatLngPoint,
@@ -243,8 +245,40 @@ function removePart(partIndex: number) {
   activePart.value = Math.max(0, partIndex - 1)
 }
 
+function applyWkt(text: string) {
+  const parsed = parseWkt(text)
+  const first = parsed[0]
+  if (!first) {
+    error.value = 'Nenhum polígono encontrado no WKT.'
+    return
+  }
+  const geomParts = geometryToParts(first.geometry)
+  if (!geomParts.length || geomParts.some((part) => part.length < 3)) {
+    error.value = 'WKT inválido: cada polígono precisa de pelo menos 3 coordenadas.'
+    return
+  }
+  hydrating = true
+  kind.value = first.geometry.type
+  if (!name.value.trim()) name.value = first.name
+  parts.splice(0, parts.length, ...geomParts.map((part) => rowsFromPoints(part)))
+  pastes.splice(0, pastes.length, ...geomParts.map(() => ''))
+  activePart.value = 0
+  hydrating = false
+  error.value = parsed.length > 1
+    ? `WKT com ${parsed.length} geometrias: a primeira foi aplicada. Use Importar para plotar todas.`
+    : ''
+}
+
 function applyPaste(partIndex: number) {
   const text = pastes[partIndex] ?? ''
+  if (looksLikeWkt(text)) {
+    try {
+      applyWkt(text)
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Não foi possível ler o WKT.'
+    }
+    return
+  }
   const points = parseCoordinateList(text, order.value === 'lnglat' ? 'lnglat' : 'latlng')
   if (points.length < 3) {
     error.value = 'A lista precisa ter pelo menos 3 pares de coordenadas válidos.'

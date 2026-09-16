@@ -19,6 +19,9 @@ export interface MapFeature {
   visible: boolean
   geometry: MapGeometry
   createdAt: string
+  fillOpacity?: number
+  weight?: number
+  dashArray?: string
 }
 
 export const PALETTE = ['#818cf8', '#22d3ee', '#34d399', '#fbbf24', '#f87171', '#e879f9']
@@ -191,6 +194,73 @@ export function mergeGeometries(geometries: MapGeometry[]): MultiPolygonGeometry
   return { type: 'MultiPolygon', coordinates }
 }
 
+export function geometryToClipping(geometry: MapGeometry): Position[][][] {
+  return geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates
+}
+
+export function clippingToGeometry(coords: Position[][][]): MapGeometry | null {
+  const polygons = coords
+    .map((polygon) => polygon.map((ring) => closeRing(ring)).filter((ring) => ring.length >= 4))
+    .filter((polygon) => polygon.length > 0)
+  if (!polygons.length) return null
+  const first = polygons[0]
+  if (polygons.length === 1 && first) {
+    return { type: 'Polygon', coordinates: first }
+  }
+  return { type: 'MultiPolygon', coordinates: polygons }
+}
+
+function ringToWkt(ring: Position[]): string {
+  return `(${closeRing(ring).map(([lng, lat]) => `${lng} ${lat}`).join(',')})`
+}
+
+function polygonToWkt(coordinates: Position[][]): string {
+  return `(${coordinates.map(ringToWkt).join(',')})`
+}
+
+export function geometryToWkt(geometry: MapGeometry): string {
+  if (geometry.type === 'Polygon') return `POLYGON${polygonToWkt(geometry.coordinates)}`
+  return `MULTIPOLYGON(${geometry.coordinates.map(polygonToWkt).join(',')})`
+}
+
+const EARTH_RADIUS_M = 6378137
+
+function toRad(deg: number) {
+  return (deg * Math.PI) / 180
+}
+
+export function ringAreaM2(ring: Position[]): number {
+  if (ring.length < 4) return 0
+  let area = 0
+  for (let i = 0; i < ring.length - 1; i++) {
+    const a = ring[i]
+    const b = ring[i + 1]
+    if (!a || !b) continue
+    area += toRad(b[0] - a[0]) * (2 + Math.sin(toRad(a[1])) + Math.sin(toRad(b[1])))
+  }
+  return (area * EARTH_RADIUS_M * EARTH_RADIUS_M) / 2
+}
+
+export function geometryAreaM2(geometry: MapGeometry): number {
+  const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates
+  let total = 0
+  for (const polygon of polygons) {
+    const [outer, ...holes] = polygon
+    if (!outer) continue
+    total += Math.abs(ringAreaM2(outer))
+    for (const hole of holes) total -= Math.abs(ringAreaM2(hole))
+  }
+  return Math.max(0, total)
+}
+
+export function formatArea(m2: number): string {
+  if (!Number.isFinite(m2) || m2 <= 0) return '0 m²'
+  if (m2 >= 1_000_000) return `${(m2 / 1_000_000).toFixed(3)} km²`
+  if (m2 >= 10_000) return `${(m2 / 10_000).toFixed(2)} ha`
+  if (m2 >= 100) return `${Math.round(m2)} m²`
+  return `${m2.toFixed(1)} m²`
+}
+
 export function toFeatureCollection(features: MapFeature[]) {
   return {
     type: 'FeatureCollection',
@@ -297,4 +367,234 @@ export function parseGeoJson(text: string): { name: string; color: string; geome
   }
 
   return collected
+}
+
+export type ImportedGeometry = { name: string; color: string; geometry: MapGeometry }
+
+const WKT_HEAD = /^(?:SRID=\d+\s*;\s*)?(GEOMETRYCOLLECTION|(?:MULTI)?POLYGON)(?:\s*(?:ZM|Z|M))?\b/i
+
+export function looksLikeWkt(text: string): boolean {
+  return WKT_HEAD.test(unwrapImportedText(text))
+}
+
+function unwrapImportedText(text: string): string {
+  let value = text.trim()
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    value = value.slice(1, -1).trim()
+  }
+  return value
+}
+
+export function parseImportedGeometries(text: string): ImportedGeometry[] {
+  const trimmed = unwrapImportedText(text)
+  if (!trimmed) {
+    throw new Error('Cole um GeoJSON ou um WKT (POLYGON / MULTIPOLYGON).')
+  }
+
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    return parseGeoJson(trimmed)
+  }
+
+  if (looksLikeWkt(trimmed)) {
+    return parseWkt(trimmed)
+  }
+
+  try {
+    return parseGeoJson(trimmed)
+  } catch {
+    try {
+      return parseWkt(trimmed)
+    } catch {
+      throw new Error('Cole um GeoJSON (Feature/Polygon) ou um WKT (POLYGON/MULTIPOLYGON).')
+    }
+  }
+}
+
+export function parseWkt(text: string): ImportedGeometry[] {
+  const input = unwrapImportedText(text)
+  const cursor = { at: 0, input }
+  const collected: ImportedGeometry[] = []
+
+  const push = (geometry: MapGeometry | null) => {
+    if (!geometry) return
+    collected.push({
+      name: geometry.type === 'MultiPolygon'
+        ? `Multipolígono ${collected.length + 1}`
+        : `Polígono ${collected.length + 1}`,
+      color: nextColor(collected.length),
+      geometry,
+    })
+  }
+
+  while (cursor.at < input.length) {
+    skipWktSpace(cursor)
+    if (cursor.at >= input.length) break
+    if (input[cursor.at] === ';') {
+      cursor.at += 1
+      continue
+    }
+    for (const geometry of parseWktValue(cursor)) push(geometry)
+  }
+
+  if (!collected.length) {
+    throw new Error('Nenhum POLYGON ou MULTIPOLYGON encontrado no WKT.')
+  }
+
+  return collected
+}
+
+export function parseWktGeometry(text: string): MapGeometry {
+  const parsed = parseImportedGeometries(text)
+  if (parsed.length === 1 && parsed[0]) return parsed[0].geometry
+  return mergeGeometries(parsed.map((item) => item.geometry))
+}
+
+function parseWktValue(cursor: { at: number; input: string }): MapGeometry[] {
+  skipWktSpace(cursor)
+  const srid = cursor.input.slice(cursor.at).match(/^SRID=\d+\s*;\s*/i)
+  if (srid) cursor.at += srid[0].length
+
+  skipWktSpace(cursor)
+  const head = cursor.input.slice(cursor.at).match(/^(GEOMETRYCOLLECTION|(?:MULTI)?POLYGON)(?:\s*(?:ZM|Z|M))?\b/i)
+  if (!head) {
+    throw new Error('WKT inválido. Use POLYGON, MULTIPOLYGON ou GEOMETRYCOLLECTION.')
+  }
+
+  cursor.at += head[0].length
+  const type = head[1]?.toUpperCase() ?? ''
+  skipWktSpace(cursor)
+
+  if (matchWktKeyword(cursor, 'EMPTY')) {
+    throw new Error('Geometria WKT vazia.')
+  }
+
+  if (type === 'GEOMETRYCOLLECTION') {
+    return parseWktCollection(cursor)
+  }
+
+  expectWktChar(cursor, '(')
+  if (type === 'MULTIPOLYGON') {
+    const geometry = asMultiPolygon(parseWktPolygonList(cursor))
+    expectWktChar(cursor, ')')
+    if (!geometry) throw new Error('MULTIPOLYGON WKT inválido.')
+    return [geometry]
+  }
+
+  const geometry = asPolygon(parseWktRingList(cursor))
+  expectWktChar(cursor, ')')
+  if (!geometry) throw new Error('POLYGON WKT inválido. Informe pelo menos 3 pontos no anel.')
+  return [geometry]
+}
+
+function parseWktCollection(cursor: { at: number; input: string }): MapGeometry[] {
+  expectWktChar(cursor, '(')
+  const geometries: MapGeometry[] = []
+  while (true) {
+    skipWktSpace(cursor)
+    if (peekWkt(cursor) === ')') break
+    if (geometries.length) expectWktChar(cursor, ',')
+    geometries.push(...parseWktValue(cursor))
+  }
+  expectWktChar(cursor, ')')
+  if (!geometries.length) throw new Error('GEOMETRYCOLLECTION sem polígonos.')
+  return geometries
+}
+
+function parseWktPolygonList(cursor: { at: number; input: string }): Position[][][] {
+  const polygons: Position[][][] = []
+  while (true) {
+    skipWktSpace(cursor)
+    if (peekWkt(cursor) === ')') break
+    if (polygons.length) expectWktChar(cursor, ',')
+    expectWktChar(cursor, '(')
+    polygons.push(parseWktRingList(cursor))
+    expectWktChar(cursor, ')')
+  }
+  return polygons
+}
+
+function parseWktRingList(cursor: { at: number; input: string }): Position[][] {
+  const rings: Position[][] = []
+  while (true) {
+    skipWktSpace(cursor)
+    if (peekWkt(cursor) === ')') break
+    if (rings.length) expectWktChar(cursor, ',')
+    rings.push(parseWktRing(cursor))
+  }
+  return rings
+}
+
+function parseWktRing(cursor: { at: number; input: string }): Position[] {
+  expectWktChar(cursor, '(')
+  const points: Position[] = []
+  while (true) {
+    skipWktSpace(cursor)
+    if (peekWkt(cursor) === ')') break
+    if (points.length) expectWktChar(cursor, ',')
+    points.push(parseWktPosition(cursor))
+  }
+  expectWktChar(cursor, ')')
+  if (points.length < 3) {
+    throw new Error('Anel WKT precisa de pelo menos 3 coordenadas.')
+  }
+  return closeRing(points)
+}
+
+function parseWktPosition(cursor: { at: number; input: string }): Position {
+  const lng = parseWktNumber(cursor)
+  const lat = parseWktNumber(cursor)
+  while (isWktNumberStart(cursor)) parseWktNumber(cursor)
+  const point = { lat, lng }
+  if (!isValidLatLng(point)) {
+    throw new Error(`Coordenada WKT inválida: ${lng} ${lat}. Use longitude latitude.`)
+  }
+  return [lng, lat]
+}
+
+function parseWktNumber(cursor: { at: number; input: string }): number {
+  skipWktSpace(cursor)
+  const match = cursor.input.slice(cursor.at).match(/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/)
+  if (!match) throw new Error('Número esperado no WKT.')
+  cursor.at += match[0].length
+  const value = Number(match[0])
+  if (!Number.isFinite(value)) throw new Error(`Número WKT inválido: ${match[0]}`)
+  return value
+}
+
+function isWktNumberStart(cursor: { at: number; input: string }): boolean {
+  skipWktSpace(cursor)
+  const ch = peekWkt(cursor)
+  return ch === '+' || ch === '-' || ch === '.' || (ch >= '0' && ch <= '9')
+}
+
+function matchWktKeyword(cursor: { at: number; input: string }, keyword: string): boolean {
+  skipWktSpace(cursor)
+  const slice = cursor.input.slice(cursor.at, cursor.at + keyword.length)
+  if (slice.toUpperCase() !== keyword.toUpperCase()) return false
+  const next = cursor.input[cursor.at + keyword.length]
+  if (next && /[A-Za-z0-9_]/i.test(next)) return false
+  cursor.at += keyword.length
+  return true
+}
+
+function expectWktChar(cursor: { at: number; input: string }, char: string) {
+  skipWktSpace(cursor)
+  if (cursor.input[cursor.at] !== char) {
+    throw new Error(`WKT inválido: esperado "${char}".`)
+  }
+  cursor.at += 1
+}
+
+function peekWkt(cursor: { at: number; input: string }): string {
+  skipWktSpace(cursor)
+  return cursor.input[cursor.at] ?? ''
+}
+
+function skipWktSpace(cursor: { at: number; input: string }) {
+  while (cursor.at < cursor.input.length && /\s/.test(cursor.input[cursor.at] ?? '')) {
+    cursor.at += 1
+  }
 }

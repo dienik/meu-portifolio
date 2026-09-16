@@ -23,6 +23,9 @@
         <router-link to="/mapa" active-class="is-active" @click="menuOpen = false">
           Mapa
         </router-link>
+        <router-link to="/comparar" active-class="is-active" @click="menuOpen = false">
+          Comparar
+        </router-link>
         <router-link to="/chuva" active-class="is-active" @click="menuOpen = false">
           Chuva
         </router-link>

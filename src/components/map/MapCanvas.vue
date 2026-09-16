@@ -57,8 +57,9 @@ function renderFeatures() {
       style: {
         color: feature.color,
         fillColor: feature.color,
-        weight: selected ? 3.5 : 2,
-        fillOpacity: selected ? 0.38 : 0.26,
+        weight: feature.weight ?? (selected ? 3.5 : 2),
+        fillOpacity: feature.fillOpacity ?? (selected ? 0.38 : 0.26),
+        dashArray: feature.dashArray,
       },
     })
     layer.on('click', (event) => {

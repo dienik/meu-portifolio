@@ -2,16 +2,17 @@
   <section class="page">
     <header class="hero">
       <div>
-        <p class="kicker">GeoJSON · Leaflet</p>
+        <p class="kicker">GeoJSON · WKT · Leaflet</p>
         <h1>Mapa de polígonos</h1>
         <p class="lead">
-          Desenhe no mapa ou insira as coordenadas na mão. Polígonos e multipolígonos
-          entram como features GeoJSON e são plotados na hora.
+          Desenhe no mapa, cole um WKT ou insira as coordenadas na mão. Polígonos e
+          multipolígonos entram como features GeoJSON e são plotados na hora.
         </p>
       </div>
       <div class="hero-actions">
         <DsButton variant="ghost" @click="fitAll">Enquadrar tudo</DsButton>
-        <DsButton variant="secondary" @click="openImport = true">Importar GeoJSON</DsButton>
+        <DsButton variant="ghost" @click="goCompare">Comparar WKT</DsButton>
+        <DsButton variant="secondary" @click="openImport = true">Importar GeoJSON / WKT</DsButton>
         <DsButton @click="downloadGeoJson">Exportar</DsButton>
       </div>
     </header>
@@ -137,14 +138,16 @@
       </template>
     </DsModal>
 
-    <DsModal v-if="openImport" title="Importar GeoJSON" @close="openImport = false">
+    <DsModal v-if="openImport" title="Importar GeoJSON ou WKT" @close="openImport = false">
       <DsTextarea
         v-model="importText"
-        label="Cole um Feature, FeatureCollection, Polygon ou MultiPolygon"
+        label="Cole um GeoJSON (Feature, Polygon, MultiPolygon) ou um WKT (POLYGON, MULTIPOLYGON)"
+        placeholder="POLYGON((-51.21 -30.03, -51.20 -30.04, -51.21 -30.04, -51.21 -30.03))"
+        hint="WKT usa longitude latitude, como no PostGIS: POLYGON((lng lat, ...))"
         :rows="10"
         :error="importError"
       />
-      <input class="file" type="file" accept=".json,.geojson,application/geo+json" @change="onFile" />
+      <input class="file" type="file" accept=".json,.geojson,.wkt,application/geo+json,text/plain" @change="onFile" />
       <template #footer>
         <DsButton variant="ghost" @click="openImport = false">Cancelar</DsButton>
         <DsButton @click="confirmImport">Plotar no mapa</DsButton>
@@ -165,6 +168,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import MapCanvas from './MapCanvas.vue'
 import FeatureCoordinateForm from './FeatureCoordinateForm.vue'
 import DsButton from '../ui/DsButton.vue'
@@ -201,6 +205,7 @@ const canvas = ref<{
   fitAll: () => void
   invalidate: () => void
 } | null>(null)
+const router = useRouter()
 const coordForm = ref<{ submit: () => void; addPoint: (point: LatLngPoint) => void } | null>(null)
 const mode = ref<DrawMode>('idle')
 const vertices = ref<LatLngPoint[]>([])
@@ -399,6 +404,10 @@ function fitAll() {
   canvas.value?.fitAll()
 }
 
+function goCompare() {
+  void router.push('/comparar')
+}
+
 function toggleSelect(id: string) {
   selectedIds.value = selectedIds.value.includes(id)
     ? selectedIds.value.filter((item) => item !== id)
@@ -455,7 +464,7 @@ function confirmImport() {
     flash(`${created.length} geometria(s) plotada(s).`)
     window.setTimeout(() => canvas.value?.fitAll(), 40)
   } catch (error) {
-    importError.value = error instanceof Error ? error.message : 'Não foi possível ler o GeoJSON.'
+    importError.value = error instanceof Error ? error.message : 'Não foi possível ler o GeoJSON ou o WKT.'
   }
 }
 
