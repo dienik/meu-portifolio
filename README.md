@@ -1,6 +1,6 @@
 # Portfólio — Dieni Kielermann
 
-Front-end em Vue 3 com design system próprio, dashboard de cadastro, mapa de polígonos/GeoJSON e mapa de chuva interpolada com relatório em PDF.
+Front-end em Vue 3 com design system próprio, dashboard de cadastro, mapa de polígonos/GeoJSON, comparador WKT e mapa de chuva interpolada com relatório em PDF.
 
 **Site:** [https://dienik.github.io/meu-portifolio](https://dienik.github.io/meu-portifolio)
 
@@ -12,7 +12,9 @@ O roteamento usa hash (`#/`), então as telas no GitHub Pages ficam:
 | Design System | https://dienik.github.io/meu-portifolio/#/projects |
 | Dashboard de cadastro | https://dienik.github.io/meu-portifolio/#/dashboard |
 | Mapa de polígonos | https://dienik.github.io/meu-portifolio/#/mapa |
+| Comparador WKT | https://dienik.github.io/meu-portifolio/#/comparar |
 | Chuva interpolada | https://dienik.github.io/meu-portifolio/#/chuva |
+| RAG do portfólio | https://dienik.github.io/meu-portifolio/#/rag |
 
 ## Stack
 
@@ -20,6 +22,7 @@ O roteamento usa hash (`#/`), então as telas no GitHub Pages ficam:
 - **Vue Router** (hash history, compatível com GitHub Pages)
 - **Leaflet** + tiles do **OpenStreetMap**
 - **Open-Meteo** (chuva atual e histórica, sem chave de API)
+- RAG local (BM25 + embeddings + RRF, sem API de modelo)
 - **html2canvas** + **jsPDF** (exportação do relatório)
 - Tokens e componentes em `src/styles/tokens.css` e `src/components/ui/`
 
@@ -52,6 +55,25 @@ Dá para escolher **início e fim** (até 14 dias, inclusive histórico), arrast
 
 Arquivos principais: `src/lib/rain.ts`, `src/lib/rainCharts.ts`, `src/lib/rainPdf.ts`, `src/components/map/RainMapStudio.vue`, `src/components/map/RainMapCanvas.vue`.
 
+### Comparador WKT
+
+Cole duas geometrias em WKT, veja no mapa e calcule interseção, união ou diferença com `polygon-clipping`.
+
+### RAG do portfólio
+
+A tela `/rag` responde perguntas sobre os projetos **sem LLM e sem API key**.
+
+Como foi feito:
+
+1. **Corpus** — documentos curtos em `src/lib/agent/corpus.ts` (um assunto por `id`).
+2. **Tokenize** — minúscula, sem acento, sem stopwords (`tokenize.ts`).
+3. **BM25** — ranking por palavra em comum; termo raro pesa mais.
+4. **Embedding + cosseno** — vetor 256d por *hashing trick*; textos parecidos sobem juntos.
+5. **RRF** — funde as duas listas por posição: `1 / (60 + rank)`.
+6. **Resposta** — o 1º hit vira o texto da resposta, com citações `[1] [2]`.
+
+Arquivos: `src/lib/agent/` (`corpus.ts`, `tokenize.ts`, `retrieve.ts`, `answer.ts`), `src/components/agent/RetrieveStudio.vue`.
+
 ## Como rodar localmente
 
 ```bash
@@ -75,8 +97,10 @@ Isso gera `dist/` e publica o branch `gh-pages`. No repositório: **Settings →
 src/
   components/ui/           # design system
   components/dashboard/    # cadastro
-  components/map/          # polígonos e chuva
+  components/map/          # polígonos, WKT e chuva
+  components/agent/        # tela do RAG
   components/playground/   # demos dos componentes
+  lib/agent/               # corpus, tokenize, BM25, RRF
   lib/geo.ts               # GeoJSON, polígonos
   lib/rain.ts              # Open-Meteo, grade, IDW
   lib/rainCharts.ts        # gráficos do relatório

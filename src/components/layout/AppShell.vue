@@ -29,6 +29,9 @@
         <router-link to="/chuva" active-class="is-active" @click="menuOpen = false">
           Chuva
         </router-link>
+        <router-link to="/rag" active-class="is-active" @click="menuOpen = false">
+          RAG
+        </router-link>
       </nav>
     </header>
 

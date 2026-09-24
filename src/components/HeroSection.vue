@@ -23,6 +23,7 @@
         <DsButton size="lg" variant="ghost" @click="go('/mapa')">Mapa de polígonos</DsButton>
         <DsButton size="lg" variant="ghost" @click="go('/comparar')">Comparar WKT</DsButton>
         <DsButton size="lg" variant="ghost" @click="go('/chuva')">Chuva interpolada</DsButton>
+        <DsButton size="lg" variant="ghost" @click="go('/rag')">RAG do portfólio</DsButton>
       </div>
 
       <SocialCarousel />
