@@ -29,6 +29,9 @@ jobs:
           CONVISO_COMPANY_ID: ${{ vars.CONVISO_COMPANY_ID }}
           # Conviso environment (e.g. staging); empty falls back to production.
           CONVISO_API_URL: ${{ vars.CONVISO_API_URL || 'https://api.convisoappsec.com' }}
+          # Where results are uploaded. Empty derives it from CONVISO_API_URL; staging
+          # serves it on another host (https://staging.convisoappsec.com/vulnerabilities/import).
+          CONVISO_INTAKE_URL: ${{ vars.CONVISO_INTAKE_URL }}
           # In a PR, report only what the PR introduces.
           BASELINE_COMMIT: ${{ github.event.pull_request.base.sha }}
           # The action's container loses /tmp after the step; keep the SARIF in the workspace.
