@@ -25,3 +25,7 @@ dist-ssr
 
 # Conviso AST result archive
 output.zip
+
+# Conviso AST local artifacts
+.conviso-sca-cache/
+conviso.sarif

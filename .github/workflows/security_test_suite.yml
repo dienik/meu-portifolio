@@ -1,0 +1,60 @@
+name: Conviso Security Test Suite
+
+on:
+  push:
+    branches: [main, lab/ast-vulns]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: conviso-ast-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conviso-ast:
+    name: Conviso AST (SAST, SCA, IaC, Secret, SBOM)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          # Full history: in a PR the scan diffs against the base commit.
+          fetch-depth: 0
+
+      - name: Run Conviso AST
+        uses: convisoappsec/gha-conviso-ast@main
+        env:
+          CONVISO_API_KEY: ${{ secrets.CONVISO_API_KEY }}
+          CONVISO_COMPANY_ID: ${{ vars.CONVISO_COMPANY_ID }}
+          # In a PR, report only what the PR introduces.
+          BASELINE_COMMIT: ${{ github.event.pull_request.base.sha }}
+          # The action's container loses /tmp after the step; keep the SARIF in the workspace.
+          # Inside the action's container the workspace is mounted at /github/workspace.
+          CONVISO_SARIF_PATH: /github/workspace/conviso.sarif
+
+      - name: Upload SARIF report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conviso-ast-sarif
+          path: conviso.sarif
+          if-no-files-found: ignore
+
+  # Same role as assert_security_rules.yml in platform-frontend. It is a job here,
+  # not a workflow_run workflow, because workflow_run only fires from the default branch.
+  conviso-assert:
+    name: Assert Security Rules
+    needs: conviso-ast
+    runs-on: ubuntu-latest
+    container:
+      image: convisoappsec/convisoast:latest
+      env:
+        CONVISO_API_KEY: ${{ secrets.CONVISO_API_KEY }}
+        CONVISO_COMPANY_ID: ${{ vars.CONVISO_COMPANY_ID }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Assert Security Rules
+        run: conviso vulnerability assert-security-rules
