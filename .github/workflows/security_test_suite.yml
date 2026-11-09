@@ -27,6 +27,8 @@ jobs:
         env:
           CONVISO_API_KEY: ${{ secrets.CONVISO_API_KEY }}
           CONVISO_COMPANY_ID: ${{ vars.CONVISO_COMPANY_ID }}
+          # Conviso environment (e.g. staging); empty falls back to production.
+          CONVISO_API_URL: ${{ vars.CONVISO_API_URL || 'https://api.convisoappsec.com' }}
           # In a PR, report only what the PR introduces.
           BASELINE_COMMIT: ${{ github.event.pull_request.base.sha }}
           # The action's container loses /tmp after the step; keep the SARIF in the workspace.
@@ -52,6 +54,7 @@ jobs:
       env:
         CONVISO_API_KEY: ${{ secrets.CONVISO_API_KEY }}
         CONVISO_COMPANY_ID: ${{ vars.CONVISO_COMPANY_ID }}
+        CONVISO_API_URL: ${{ vars.CONVISO_API_URL || 'https://api.convisoappsec.com' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
