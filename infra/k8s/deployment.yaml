@@ -1,0 +1,27 @@
+# AST LAB — IaC: privileged pod with host access and no resource limits.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portfolio-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portfolio-api
+  template:
+    metadata:
+      labels:
+        app: portfolio-api
+    spec:
+      hostNetwork: true
+      hostPID: true
+      containers:
+        - name: api
+          image: portfolio-api:latest
+          securityContext:
+            privileged: true
+            allowPrivilegeEscalation: true
+            runAsUser: 0
+          env:
+            - name: DB_PASSWORD
+              value: Sup3rS3cr3tPassw0rd!
